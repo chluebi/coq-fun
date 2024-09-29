@@ -85,9 +85,19 @@ Module MyNat.
         f_equal. apply IHn.
     Qed.
 
+    Lemma addMoveLeft: forall n m o: myNat, n + m + o = n + o + m.
+    Proof.
+        intros n m o.
+        rewrite <- addAssociative.
+        rewrite addCommutative with m o.
+        rewrite addAssociative.
+        reflexivity.
+    Qed.
+
+
     
-    Hint Resolve addZero zeroAdd addingIntoS addCommutative addInjective addAssociative : myNatDB.
-    Hint Rewrite addZero zeroAdd addingIntoS addCommutative addInjective addAssociative : myNatDB.
+    Hint Resolve addZero zeroAdd addingIntoS addCommutative addInjective addAssociative addMoveLeft : myNatDB.
+    Hint Rewrite addZero zeroAdd addingIntoS addCommutative addInjective addAssociative addMoveLeft : myNatDB.
 
 
     Lemma mulZero: forall n : myNat, n * 0 = 0.
@@ -158,6 +168,16 @@ Module MyNat.
             reflexivity. 
     Qed.
 
+    Lemma dist2: forall n m p: myNat, n * (m + p) = n * m + n * p.
+    Proof.
+        intros n m p.
+        replace (n * (m + p)) with ((m + p) * n) by apply multCommutative.
+        rewrite dist.
+        rewrite multCommutative with m n.
+        rewrite multCommutative with p n.
+        reflexivity.
+    Qed.
+
     Lemma multAssociative: forall n m o: myNat, n * (m * o) = (n * m) * o.
     Proof.
         intros n m p.
@@ -166,6 +186,24 @@ Module MyNat.
         - rewrite multIntoS. rewrite IHn. rewrite multIntoS.
             rewrite dist. reflexivity.
     Qed.
+
+    Lemma multMoveLeft: forall n m o: myNat, n * m * o = n * o * m.
+    Proof.
+        intros n m p.
+        rewrite <- multAssociative.
+        rewrite multCommutative with m p.
+        rewrite multAssociative.
+        reflexivity.
+    Qed.
+
+    Hint Resolve mulZero zeroMul mulOne OneMul multIntoS0 multIntoS dist dist2 multCommutative multAssociative multMoveLeft : myNatDB.
+    Hint Rewrite mulZero zeroMul mulOne OneMul multIntoS0 multIntoS dist dist2 multCommutative multAssociative multMoveLeft : myNatDB.
+
+    Lemma timesTwo: forall n m p: myNat, 2 * n = n + n.
+    Proof.
+        auto with myNatDB.
+    Qed.
+
 
     Fixpoint sumDownFromN (a: myNat) :=
         match a with
@@ -179,18 +217,24 @@ Module MyNat.
         intros n.
         induction n.
         - compute. reflexivity.
-        - rewrite multCommutative. simpl.
-          rewrite addAssociative. 
-          rewrite <- addAssociative with (S n) (sumDownFromN n) (S n).
-          rewrite addCommutative with (sumDownFromN n) (S n).
-          rewrite addAssociative.
-          rewrite addAssociative.
-          simpl.
-          rewrite <- addAssociative.
+        - replace (2 * sumDownFromN (S n)) with (2 * (S n) + 2 * (sumDownFromN n)).
+          replace (S n * (S n + 1)) with (2 * (S n) + n * (n + 1)).
           f_equal.
-          rewrite multCommutative in IHn. simpl in IHn.
-          rewrite multCommutative. simpl.
           apply IHn.
+
+          replace (S n * (S n + 1)) with ((n + 1) * (n + 2)) by auto with myNatDB.
+          replace (2 * S n) with (2 * (n + 1)) by auto with myNatDB.
+          replace (2 * (n + 1) + n * (n + 1)) with ((2 + n) * (n + 1)) by auto with myNatDB.
+          replace ((2 + n) * (n + 1)) with ((n + 1) * (2 + n)) by auto with myNatDB.
+          replace (2 + n) with (n + 2) by auto with myNatDB.
+          reflexivity.
+        
+          simpl.
+          replace (2 + 2 * n) with (2 * 1 + 2 * n) by auto with myNatDB.
+          replace (2 * 1 + 2 * n) with (2 * (1 + n)) by auto with myNatDB.
+          replace (2 * (1 + n) + 2 * sumDownFromN n) with (2 * (1 + n + sumDownFromN n)) by auto with myNatDB.
+          replace (1 + n) with (S n) by auto with myNatDB.
+          reflexivity.
     Qed.
 
 
@@ -226,101 +270,40 @@ Module MyNat.
         induction n.
         - compute. reflexivity.
         - simpl.
-        rewrite addCommutative with (S n) (S n * n).
-        rewrite multCommutative with (S n) n.
-        rewrite <- multIntoS. 
-        replace 2 with (1 + 1) at 3.
-        rewrite <- addAssociative with 1 1 (2 * n).
-        rewrite addCommutative with 1 (2 * n).
-        rewrite multCommutative with (S n + S n * S n) (1 + (2 * n + 1)).
-        rewrite dist.
-        rewrite OneMul.
+        replace (6 * (S n + S n * n + powerSumDownFromN n 2)) 
+        with (6 * (S n + S n * n) + 6 * powerSumDownFromN n 2) by auto with myNatDB.
+        rewrite dist2 with 6 (S n) (S n * n).
+        
+        replace (S n + (S n + S n * n)) with (S n + S n + S n * n) by auto with myNatDB.
+        replace (2 + 2 * n) with (1 + (2 * n + 1)) by auto with myNatDB.
+        rewrite dist2 with (S n + S n + S n * n) 1 (2 * n + 1).
+        rewrite dist with (2 * n + 1) (S n + S n) (S n * n).
+        replace (S n * n * (2 * n + 1)) with ((n + 1) * n  * (2 * n + 1)) by auto with myNatDB.
+        rewrite multCommutative with (n + 1) n.
+        rewrite IHn.
         rewrite addAssociative.
-        replace (S n) with (n + 1) at 10.
-        rewrite dist with (S n) n 1.
-        rewrite OneMul.
-        rewrite addCommutative with (n * S n) (S n).
-        rewrite addAssociative with (S n) (S n) (n * S n).
-        rewrite multCommutative with (2 * n + 1) (S n + S n + n * S n).
-        rewrite dist with (2 * n + 1) (S n + S n) (n * S n).
-        replace (S n + S n) with (n + n + 2).
         rewrite addAssociative.
-        replace (S n) with (n + 1) at 9.
-        rewrite <- IHn.
-        simpl.
-        rewrite addAssociative with (S n) (S n) (S n * n).
-        rewrite <- addAssociative with (S n + S n) (S n * n) (S n + S n + S n * n).
-        rewrite addCommutative with (S n * n) (S n + S n + S n * n).
-        rewrite <- addAssociative with (S n + S n) (S n * n) (S n * n).
-        rewrite addAssociative with (S n + S n) (S n + S n) (S n * n + S n * n).
-        rewrite addAssociative with (S n + S n + (S n + S n) + (S n * n + S n * n)) (S (S (n + n))) (S (S (n + n)) * (2 * n)).
-        rewrite <- addAssociative with (S n + S n + (S n + S n)) (S n * n + S n * n) (S (S (n + n))).
-        rewrite addCommutative with (S n * n + S n * n) (S (S (n + n))).
-        rewrite addAssociative with (S n + S n + (S n + S n)) (S (S (n + n))) (S n * n + S n * n).
-        replace (S (S (n + n))) with (S n + S n). 
-        replace (S n + S n) with (2 * (S n)).
-        rewrite <- dist.
-        rewrite <- dist.
-        replace (2 + 2 + 2) with 6.
-        replace (S n * n + S n * n) with (2 * (S n * n)).
-        rewrite multAssociative with (2 * S n) 2 n.
-        rewrite <- multAssociative with 2 (S n) 2.
-        rewrite multCommutative with (S n) 2.
-        rewrite multAssociative with 2 2 (S n).
-        rewrite <- multAssociative with (2 * 2) (S n) n.
-        rewrite <- addAssociative with (6 * S n) (2 * (S n * n)) (2 * 2 * (S n * n)).
-        rewrite <- dist with (S n * n) 2 (2 * 2).
-        replace (2 + 2 * 2) with 6.
-        rewrite multCommutative.
-        rewrite <- addAssociative with (S n) (S n * n) (powerSumDownFromN n 2).
-        rewrite dist.
-        rewrite dist with 6 (S n * n) (powerSumDownFromN n 2).
+        rewrite mulOne.
+        replace ((S n + S n) * (2 * n + 1)) with ((S n + S n) * (2 * n) + (S n + S n)) by auto with myNatDB.
+        replace (S n + S n) with (2 * (S n)) by auto with myNatDB.
+        replace (2 * (S n) * (2 * n)) with (2 * (S n) * 2 * n) by auto with myNatDB.
+        replace (2 * (S n) * 2) with (2 * 2 * (S n)) by auto with myNatDB.
+        replace (2 * 2) with 4 by auto with myNatDB.
         rewrite addAssociative.
-        rewrite multCommutative with 6 (S n).
-        rewrite multCommutative with 6 (S n * n).
-        rewrite multCommutative with 6 (powerSumDownFromN n 2).
-        reflexivity.
-
-        trivial.
-
-        replace 2 with (1 + 1). 
-        rewrite dist.
-        rewrite OneMul.
-        reflexivity.
-
-        trivial.
-
-        trivial.
-
-        replace 2 with (1 + 1). 
-        rewrite dist.
-        rewrite OneMul.
-        reflexivity.
-
-        trivial.
-
-        rewrite addingIntoS.
-        rewrite addCommutative.
-        rewrite addingIntoS.
-        reflexivity.
-
-        simpl.
-        reflexivity.
-
-        replace 2 with (1 + 1).
-        rewrite addAssociative with (n + n) 1 1.
-        rewrite <- addAssociative with n n 1.
-        rewrite <- addAssociative with n (n + 1) 1.
-        rewrite addCommutative with (n + 1) 1.
         rewrite addAssociative.
-        simpl.
+        replace (2 * S n + S n * n + 2 * S n) with (2 * S n + 2 * S n + S n * n) by auto with myNatDB.
+        replace (2 * S n + 2 * S n) with ((2 + 2) * S n) by auto with myNatDB.
+        replace (2 + 2) with 4 by auto with myNatDB.
+        replace (4 * S n + S n * n + S n * n) with (4 * S n + (S n * n + S n * n)) by auto with myNatDB.
+        replace (S n * n + S n * n) with (2 * (S n * n)) by auto with myNatDB.
+        replace (4 * S n * n) with (4 * (S n * n)) by auto with myNatDB.
+        replace (4 * S n + 2 * (S n * n) + 4 * (S n * n)) with (4 * S n + (2 * (S n * n) + 4 * (S n * n))) by auto with myNatDB.
+        replace ((2 * (S n * n) + 4 * (S n * n))) with ((2 + 4) * (S n * n)) by auto with myNatDB.
+        replace (2 + 4) with 6 by auto with myNatDB.
+        replace (4 * S n + 6 * (S n * n) + 2 * S n) with (4 * S n  + 2 * S n + 6 * (S n * n)) by auto with myNatDB.
+        replace (4 * S n  + 2 * S n) with ((4 + 2) * S n) by auto with myNatDB.
+        replace (4 + 2) with 6 by auto with myNatDB.
         reflexivity.
-
-        trivial.
-
-        trivial.
-
-        trivial.
     Qed.
 
 End MyNat.
